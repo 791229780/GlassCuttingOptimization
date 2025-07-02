@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -12,18 +13,35 @@ namespace GlassCuttingOptimization.Models.Optimization
     /// </summary>
     public class OptimizedGlassPiece
     {
+
         public int OrderID { get; set; }
         public string OrderNumber { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public int Rotation { get; set; } // 0, 90, 180, 270
         public int Priority { get; set; }
-        public int SequenceNumber { get; set; } // 排版序号
-        public bool IsSelected { get; set; }
+        public int SequenceNumber { get; set; }
         public string Customer { get; set; }
+        public int Rotation { get; set; } // 0, 90, 180, 270
+        public string Note { get; set; }
+        //public int OrderID { get; set; }
+        //public string OrderNumber { get; set; }
+        //public int Width { get; set; }
+        //public int Height { get; set; }
+        //public int X { get; set; }
+        //public int Y { get; set; }
+        //public int Rotation { get; set; } // 0, 90, 180, 270
+        //public int Priority { get; set; }
+        //public int SequenceNumber { get; set; } // 排版序号
+        public bool IsSelected { get; set; }
+        //public string Customer { get; set; }
         public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
+        // 磨边信息
+        public bool BottomEdge { get; set; }
+        public bool TopEdge { get; set; }
+        public bool LeftEdge { get; set; }
+        public bool RightEdge { get; set; }
 
         // 添加原始状态备份
         public int OriginalX { get; set; }
@@ -31,7 +49,21 @@ namespace GlassCuttingOptimization.Models.Optimization
         public int OriginalWidth { get; set; }
         public int OriginalHeight { get; set; }
         public int OriginalRotation { get; set; }
+        /// <summary>
+        /// 检查是否与其他玻璃片重叠
+        /// </summary>
+        public bool IntersectsWith(OptimizedGlassPiece other)
+        {
+            return Bounds.IntersectsWith(other.Bounds);
+        }
 
+        /// <summary>
+        /// 检查是否在指定区域内
+        /// </summary>
+        public bool IsWithinBounds(Rectangle area)
+        {
+            return area.Contains(Bounds);
+        }
         /// <summary>
         /// 保存当前状态为原始状态
         /// </summary>
@@ -82,58 +114,207 @@ namespace GlassCuttingOptimization.Models.Optimization
             };
         }
     }
+    /// <summary>
+    /// 切割路径点
+    /// </summary>
+    public class CuttingPoint
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public CuttingDirection Direction { get; set; }
+        public int SequenceNumber { get; set; }
+    }
 
     /// <summary>
-    /// 排版后的板材
+    /// 切割方向
+    /// </summary>
+    public enum CuttingDirection
+    {
+        Horizontal, // 水平切割
+        Vertical    // 垂直切割
+    }
+
+    /// <summary>
+    /// G代码生成结果
+    /// </summary>
+    public class GCodeResult
+    {
+        public string GCode { get; set; }
+        public List<string> Lines { get; set; } = new List<string>();
+        public int TotalPieces { get; set; }
+        public TimeSpan GenerationTime { get; set; }
+        public string FileName { get; set; }
+    }
+    /// <summary>
+    /// 优化后的板材
     /// </summary>
     public class OptimizedSheet
     {
-        public long OriginalID { get; set; }
+
+
         public int Width { get; set; }
         public int Height { get; set; }
+        public string MaterialType { get; set; }
+        public double Thickness { get; set; }
+
+        // 修边参数
+        public int X1 { get; set; }
+        public int X2 { get; set; }
+        public int Y1 { get; set; }
+        public int Y2 { get; set; }
+
         public List<OptimizedGlassPiece> GlassPieces { get; set; } = new List<OptimizedGlassPiece>();
 
         public double UtilizationRate
         {
-            get => CalculateUtilizationRate();
-        }
-
-        private double CalculateUtilizationRate()
-        {
-            if (Width == 0 || Height == 0) return 0;
-
-            double totalGlassArea = 0;
-            foreach (var piece in GlassPieces)
+            get
             {
-                totalGlassArea += piece.Width * piece.Height;
-            }
-
-            double sheetArea = Width * Height;
-            return sheetArea > 0 ? (totalGlassArea / sheetArea) * 100 : 0;
-        }
-
-        /// <summary>
-        /// 保存所有玻璃片的原始状态
-        /// </summary>
-        public void SaveGlassPiecesAsOriginal()
-        {
-            foreach (var piece in GlassPieces)
-            {
-                piece.SaveAsOriginal();
+                double totalArea = (double)Width * Height;
+                double usedArea = GlassPieces.Sum(p => (double)p.Width * p.Height);
+                return totalArea > 0 ? (usedArea / totalArea) * 100 : 0;
             }
         }
 
         /// <summary>
-        /// 恢复所有玻璃片到原始状态
+        /// 获取有效切割区域（考虑修边）
         /// </summary>
-        public void RestoreGlassPiecesToOriginal()
+        public Rectangle GetEffectiveArea()
         {
-            foreach (var piece in GlassPieces)
-            {
-                piece.RestoreToOriginal();
-            }
+            return new Rectangle(X1, Y1, Width - X1 - X2, Height - Y1 - Y2);
         }
     }
+
+    /// <summary>
+    /// 排版后的板材
+    /// </summary>
+    //public class OptimizedSheet
+    //{
+    //    public long OriginalID { get; set; }
+    //    public int Width { get; set; }
+    //    public int Height { get; set; }
+    //    public List<OptimizedGlassPiece> GlassPieces { get; set; } = new List<OptimizedGlassPiece>();
+
+    //    public double UtilizationRate
+    //    {
+    //        get => CalculateUtilizationRate();
+    //    }
+
+    //    private double CalculateUtilizationRate()
+    //    {
+    //        if (Width == 0 || Height == 0) return 0;
+
+    //        double totalGlassArea = 0;
+    //        foreach (var piece in GlassPieces)
+    //        {
+    //            totalGlassArea += piece.Width * piece.Height;
+    //        }
+
+    //        double sheetArea = Width * Height;
+    //        return sheetArea > 0 ? (totalGlassArea / sheetArea) * 100 : 0;
+    //    }
+
+    //    /// <summary>
+    //    /// 保存所有玻璃片的原始状态
+    //    /// </summary>
+    //    public void SaveGlassPiecesAsOriginal()
+    //    {
+    //        foreach (var piece in GlassPieces)
+    //        {
+    //            piece.SaveAsOriginal();
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// 恢复所有玻璃片到原始状态
+    //    /// </summary>
+    //    public void RestoreGlassPiecesToOriginal()
+    //    {
+    //        foreach (var piece in GlassPieces)
+    //        {
+    //            piece.RestoreToOriginal();
+    //        }
+    //    }
+    //}
+
+    ///// <summary>
+    ///// 排版结果
+    ///// </summary>
+    //public class OptimizationResult
+    //{
+    //    public List<OptimizedSheet> Sheets { get; set; } = new List<OptimizedSheet>();
+    //    public double OverallUtilizationRate { get; set; }
+    //    public string AlgorithmUsed { get; set; }
+    //    public TimeSpan OptimizationTime { get; set; }
+
+    //    public void CalculateOverallUtilization()
+    //    {
+    //        if (Sheets == null || !Sheets.Any())
+    //        {
+    //            OverallUtilizationRate = 0;
+    //            return;
+    //        }
+
+    //        double totalArea = 0;
+    //        double totalUsedArea = 0;
+
+    //        foreach (var sheet in Sheets)
+    //        {
+    //            double sheetArea = sheet.Width * sheet.Height;
+    //            double usedArea = 0;
+
+    //            foreach (var piece in sheet.GlassPieces)
+    //            {
+    //                usedArea += piece.Width * piece.Height;
+    //            }
+
+    //            totalArea += sheetArea;
+    //            totalUsedArea += usedArea;
+    //        }
+
+    //        OverallUtilizationRate = totalArea > 0 ? (totalUsedArea / totalArea) * 100 : 0;
+    //    }
+
+    //    /// <summary>
+    //    /// 保存所有板材的原始状态
+    //    /// </summary>
+    //    public void SaveAsOriginal()
+    //    {
+    //        foreach (var sheet in Sheets)
+    //        {
+    //            sheet.SaveGlassPiecesAsOriginal();
+    //        }
+    //    }
+
+    //    /// <summary>
+    //    /// 恢复所有板材到原始状态
+    //    /// </summary>
+    //    public void RestoreToOriginal()
+    //    {
+    //        foreach (var sheet in Sheets)
+    //        {
+    //            sheet.RestoreGlassPiecesToOriginal();
+    //        }
+    //        // 重新计算利用率
+    //        CalculateOverallUtilization();
+    //    }
+
+    //    public OptimizationStats GetStatistics()
+    //    {
+    //        return new OptimizationStats
+    //        {
+    //            TotalSheets = Sheets?.Count ?? 0,
+    //            TotalGlassPieces = Sheets?.Sum(s => s.GlassPieces.Count) ?? 0,
+    //            AverageUtilizationRate = OverallUtilizationRate,
+    //            BestUtilizationRate = Sheets?.Max(s => s.UtilizationRate) ?? 0,
+    //            WorstUtilizationRate = Sheets?.Min(s => s.UtilizationRate) ?? 0,
+    //            TotalArea = Sheets?.Sum(s => s.Width * s.Height) ?? 0,
+    //            TotalUsedArea = Sheets?.Sum(s => s.GlassPieces.Sum(p => p.Width * p.Height)) ?? 0
+    //        };
+    //    }
+    //}
+
+
+
 
     /// <summary>
     /// 排版结果
@@ -141,76 +322,86 @@ namespace GlassCuttingOptimization.Models.Optimization
     public class OptimizationResult
     {
         public List<OptimizedSheet> Sheets { get; set; } = new List<OptimizedSheet>();
-        public double OverallUtilizationRate { get; set; }
         public string AlgorithmUsed { get; set; }
+        public double OverallUtilizationRate { get; set; }
         public TimeSpan OptimizationTime { get; set; }
+
+        // 用于重置功能的原始状态
+        private List<OptimizedSheet> _originalSheets;
 
         public void CalculateOverallUtilization()
         {
-            if (Sheets == null || !Sheets.Any())
+            if (!Sheets.Any())
             {
                 OverallUtilizationRate = 0;
                 return;
             }
 
-            double totalArea = 0;
-            double totalUsedArea = 0;
+            double totalSheetArea = Sheets.Sum(s => (double)s.Width * s.Height);
+            double totalUsedArea = Sheets.Sum(s => s.GlassPieces.Sum(p => (double)p.Width * p.Height));
 
-            foreach (var sheet in Sheets)
-            {
-                double sheetArea = sheet.Width * sheet.Height;
-                double usedArea = 0;
-
-                foreach (var piece in sheet.GlassPieces)
-                {
-                    usedArea += piece.Width * piece.Height;
-                }
-
-                totalArea += sheetArea;
-                totalUsedArea += usedArea;
-            }
-
-            OverallUtilizationRate = totalArea > 0 ? (totalUsedArea / totalArea) * 100 : 0;
+            OverallUtilizationRate = totalSheetArea > 0 ? (totalUsedArea / totalSheetArea) * 100 : 0;
         }
 
-        /// <summary>
-        /// 保存所有板材的原始状态
-        /// </summary>
         public void SaveAsOriginal()
         {
-            foreach (var sheet in Sheets)
-            {
-                sheet.SaveGlassPiecesAsOriginal();
-            }
+            _originalSheets = DeepCopySheets(Sheets);
         }
 
-        /// <summary>
-        /// 恢复所有板材到原始状态
-        /// </summary>
         public void RestoreToOriginal()
         {
-            foreach (var sheet in Sheets)
+            if (_originalSheets != null)
             {
-                sheet.RestoreGlassPiecesToOriginal();
+                Sheets = DeepCopySheets(_originalSheets);
             }
-            // 重新计算利用率
-            CalculateOverallUtilization();
         }
 
-        public OptimizationStats GetStatistics()
+        private List<OptimizedSheet> DeepCopySheets(List<OptimizedSheet> sheets)
         {
-            return new OptimizationStats
+            return sheets.Select(s => new OptimizedSheet
             {
-                TotalSheets = Sheets?.Count ?? 0,
-                TotalGlassPieces = Sheets?.Sum(s => s.GlassPieces.Count) ?? 0,
-                AverageUtilizationRate = OverallUtilizationRate,
-                BestUtilizationRate = Sheets?.Max(s => s.UtilizationRate) ?? 0,
-                WorstUtilizationRate = Sheets?.Min(s => s.UtilizationRate) ?? 0,
-                TotalArea = Sheets?.Sum(s => s.Width * s.Height) ?? 0,
-                TotalUsedArea = Sheets?.Sum(s => s.GlassPieces.Sum(p => p.Width * p.Height)) ?? 0
-            };
+                Width = s.Width,
+                Height = s.Height,
+                MaterialType = s.MaterialType,
+                Thickness = s.Thickness,
+                X1 = s.X1,
+                X2 = s.X2,
+                Y1 = s.Y1,
+                Y2 = s.Y2,
+                GlassPieces = s.GlassPieces.Select(p => new OptimizedGlassPiece
+                {
+                    OrderID = p.OrderID,
+                    OrderNumber = p.OrderNumber,
+                    Width = p.Width,
+                    Height = p.Height,
+                    X = p.X,
+                    Y = p.Y,
+                    Priority = p.Priority,
+                    SequenceNumber = p.SequenceNumber,
+                    Customer = p.Customer,
+                    Rotation = p.Rotation,
+                    Note = p.Note,
+                    BottomEdge = p.BottomEdge,
+                    TopEdge = p.TopEdge,
+                    LeftEdge = p.LeftEdge,
+                    RightEdge = p.RightEdge
+                }).ToList()
+            }).ToList();
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public class OptimizationStats
     {
@@ -225,19 +416,15 @@ namespace GlassCuttingOptimization.Models.Optimization
 
     public enum OptimizationAlgorithm
     {
-        [System.ComponentModel.Description("智能排版")]
+        [Description("智能打包算法")]
         IntelligentPacking,
-
-        [System.ComponentModel.Description("最佳适应递减")]
+        [Description("最佳适应递减算法")]
         BestFitDecreasing,
-
-        [System.ComponentModel.Description("首次适应递减")]
+        [Description("首次适应递减算法")]
         FirstFitDecreasing,
-
-        [System.ComponentModel.Description("左下角填充")]
+        [Description("左下角填充算法")]
         BottomLeftFill,
-
-        [System.ComponentModel.Description("下次适应递减")]
+        [Description("下次适应递减算法")]
         NextFitDecreasing
     }
 }

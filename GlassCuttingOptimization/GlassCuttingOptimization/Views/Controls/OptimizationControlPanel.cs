@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using GlassCuttingOptimization.Models.Dto;
 using GlassCuttingOptimization.Models.Optimization;
 using GlassCuttingOptimization.Services;
+using System.IO;
 
 namespace GlassCuttingOptimization.Views.Controls
 {
@@ -18,6 +19,7 @@ namespace GlassCuttingOptimization.Views.Controls
         private OptimizationEngine _optimizationEngine;
         private OptimizationVisualizationControl _visualizationControl;
         private OptimizationResult _currentResult;
+        private GCodeGenerator _gCodeGenerator;
 
         public event EventHandler<OptimizationResult> OptimizationCompleted;
 
@@ -25,9 +27,101 @@ namespace GlassCuttingOptimization.Views.Controls
         {
             InitializeComponent();
             _optimizationEngine = new OptimizationEngine();
+            _gCodeGenerator = new GCodeGenerator();
             InitializeAlgorithmComboBox();
         }
+        // 预览G代码
+        private void btnPreviewGCode_Click(object sender, EventArgs e)
+        {
+            if (_currentResult == null)
+            {
+                MessageBox.Show("请先进行排版优化", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
+            try
+            {
+                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult);
+
+                // 创建预览窗口
+                var previewForm = new Form
+                {
+                    Text = "G代码预览",
+                    Size = new Size(800, 600),
+                    StartPosition = FormStartPosition.CenterParent
+                };
+
+                var textBox = new TextBox
+                {
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Both,
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Consolas", 10),
+                    ReadOnly = true,
+                    Text = gCodeResult.GCode
+                };
+
+                previewForm.Controls.Add(textBox);
+                previewForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"G代码预览失败:\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        // 添加G代码生成按钮事件
+        private void btnGenerateGCode_Click(object sender, EventArgs e)
+        {
+            if (_currentResult == null)
+            {
+                MessageBox.Show("请先进行排版优化", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                btnGenerateGCode.Enabled = false;
+                lblStatus.Text = "正在生成G代码...";
+                lblStatus.ForeColor = System.Drawing.Color.Blue;
+
+                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult);
+
+                // 显示保存对话框
+                using (var saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "G代码文件 (*.txt)|*.txt|所有文件 (*.*)|*.*";
+                    saveDialog.FileName = gCodeResult.FileName;
+                    saveDialog.Title = "保存G代码文件";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        _gCodeGenerator.SaveGCodeToFile(gCodeResult, saveDialog.FileName);
+
+                        lblStatus.Text = $"G代码生成完成 - 文件: {Path.GetFileName(saveDialog.FileName)} - 玻璃片数: {gCodeResult.TotalPieces}";
+                        lblStatus.ForeColor = System.Drawing.Color.Green;
+
+                        // 询问是否打开文件
+                        var result = MessageBox.Show($"G代码文件已保存到:\n{saveDialog.FileName}\n\n是否要打开查看？",
+                            "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            System.Diagnostics.Process.Start("notepad.exe", saveDialog.FileName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"G代码生成失败: {ex.Message}";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                MessageBox.Show($"G代码生成失败:\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnGenerateGCode.Enabled = true;
+            }
+        }
         public void SetVisualizationControl(OptimizationVisualizationControl visualizationControl)
         {
             _visualizationControl = visualizationControl;

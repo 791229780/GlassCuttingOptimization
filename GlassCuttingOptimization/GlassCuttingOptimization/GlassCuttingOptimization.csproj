@@ -42,10 +42,6 @@
     <Reference Include="BouncyCastle.Cryptography, Version=2.0.0.0, Culture=neutral, PublicKeyToken=072edcf4a5328938, processorArchitecture=MSIL">
       <HintPath>..\packages\BouncyCastle.Cryptography.2.3.1\lib\net461\BouncyCastle.Cryptography.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Data.Desktop.v21.2, Version=21.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
-    <Reference Include="DevExpress.Data.v21.2, Version=21.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
-    <Reference Include="DevExpress.Printing.v21.2.Core, Version=21.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
-    <Reference Include="DevExpress.Utils.v21.2, Version=21.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
     <Reference Include="Dijing.SerilogExt, Version=1.0.2.7, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dijing.SerilogExt.1.2.7\lib\netstandard2.0\Dijing.SerilogExt.dll</HintPath>
     </Reference>
@@ -245,6 +241,7 @@
     <Compile Include="Models\UIModels\UIOriginal.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\GCodeGenerator.cs" />
     <Compile Include="Services\OptimizationEngine.cs" />
     <Compile Include="Utils\DataOriginalUtil.cs" />
     <Compile Include="Utils\DataUtil.cs" />
@@ -333,6 +330,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Views\Controls\OptimizationControlPanel.resx">
+      <DependentUpon>OptimizationControlPanel.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\CustomerView\CustomerEditControl.resx">
       <DependentUpon>CustomerEditControl.cs</DependentUpon>
     </EmbeddedResource>

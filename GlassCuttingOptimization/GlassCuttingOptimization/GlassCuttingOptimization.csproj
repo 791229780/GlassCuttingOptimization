@@ -235,7 +235,9 @@
     <Compile Include="Models\Dto\MaterialDto.cs" />
     <Compile Include="Models\Dto\OrderDto.cs" />
     <Compile Include="Models\Dto\OriginalDto.cs" />
+    <Compile Include="Models\Dto\PlacedGlassDto.cs" />
     <Compile Include="Models\Model\NoteModel.cs" />
+    <Compile Include="Models\Optimization\OptimizationModels.cs" />
     <Compile Include="Models\UIItem\ComboboxItem.cs" />
     <Compile Include="Models\UIModels\UICustomerInfoDto.cs" />
     <Compile Include="Models\UIModels\UIMaterial.cs" />
@@ -243,6 +245,7 @@
     <Compile Include="Models\UIModels\UIOriginal.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\OptimizationEngine.cs" />
     <Compile Include="Utils\DataOriginalUtil.cs" />
     <Compile Include="Utils\DataUtil.cs" />
     <Compile Include="Utils\ExpressionBuilder.cs" />
@@ -250,6 +253,24 @@
     <Compile Include="Utils\MenuItems.cs" />
     <Compile Include="Utils\SqlSugarHelper.cs" />
     <Compile Include="Utils\UniqueCodeGenerator.cs" />
+    <Compile Include="Views\Controls\OptimizationControlPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\Controls\OptimizationControlPanel.Designer.cs">
+      <DependentUpon>OptimizationControlPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Controls\OptimizationMainControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\Controls\OptimizationMainControl.Designer.cs">
+      <DependentUpon>OptimizationMainControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Controls\OptimizationVisualizationControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\Controls\OptimizationVisualizationControl.Designer.cs">
+      <DependentUpon>OptimizationVisualizationControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\CustomerView\CustomerEditControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -277,9 +298,7 @@
     <Compile Include="Views\InsertCutOrder.Designer.cs">
       <DependentUpon>InsertCutOrder.cs</DependentUpon>
     </Compile>
-    <Compile Include="Views\OptimizeControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
+    <Compile Include="Views\OptimizeControl.cs" />
     <Compile Include="Views\OptimizeControl.Designer.cs">
       <DependentUpon>OptimizeControl.cs</DependentUpon>
     </Compile>

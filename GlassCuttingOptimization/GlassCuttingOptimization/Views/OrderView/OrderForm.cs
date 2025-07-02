@@ -6,6 +6,7 @@ using GlassCuttingOptimization.Models.Model;
 using GlassCuttingOptimization.Models.UIItem;
 using GlassCuttingOptimization.Models.UIModels;
 using GlassCuttingOptimization.Utils;
+using GlassCuttingOptimization.Views.Controls;
 using GlassCuttingOptimization.Views.GlassView;
 using NPOI.SS.Formula.Functions;
 using System;
@@ -29,13 +30,15 @@ namespace GlassCuttingOptimization.Views.OrderView
 
         List<OrderDto> _listOrder;
         OrderDto _uiOrder;
-        public OrderForm()
+        MainForm _form;
+        public OrderForm(MainForm form)
         {
             _noteModel = new NoteModel();
             _db = new SqlSugarHelper();
             _listMaterial = new List<MaterialDto>();
             _listOrder = new List<OrderDto>();
             _uiOrder = new OrderDto();
+            _form = form;
             InitializeComponent();
 
             InitData();
@@ -151,6 +154,32 @@ namespace GlassCuttingOptimization.Views.OrderView
             inputY.Leave += InputNumber_Leave;
 
             btnDeleLine.Click += BtnDeleLine_Click;
+            btnOptimization.Click += BtnOptimization_Click;
+        }
+
+        private void BtnOptimization_Click(object sender, EventArgs e)
+        {
+            
+            if (selectMaterial.Items[selectMaterial.SelectedIndex] is ComboboxItem cboItem)
+            {
+                var originalSheets = _db.Query<OriginalDto>()
+                    .Where(c => c.MaterialID == cboItem.Value.ID)
+                    .ToList();
+
+                // 创建排版控件
+                var optimizationControl = new OptimizationMainControl
+                {
+                    Dock = DockStyle.Fill
+                };
+
+               
+                _form.panel7.Controls.Clear();
+                _form.panel7.Controls.Add(optimizationControl);
+                // 运行优化
+                optimizationControl.RunOptimization(_listOrder, originalSheets);
+
+                this.Close();
+            }
         }
 
         private void BtnDeleLine_Click(object sender, EventArgs e)
@@ -591,6 +620,5 @@ namespace GlassCuttingOptimization.Views.OrderView
             table_base.AutoSizeColumnsMode = ColumnsMode.Fill;
             table_base.EmptyHeader = true;
         }
-
     }
 }

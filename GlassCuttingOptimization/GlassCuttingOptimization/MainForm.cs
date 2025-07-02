@@ -47,7 +47,7 @@ namespace GlassCuttingOptimization
 
         private void BtnOrder_Click(object sender, EventArgs e)
         {
-           var order =  new OrderForm();
+           var order =  new OrderForm(this);
             order.ShowDialog();
         }
    

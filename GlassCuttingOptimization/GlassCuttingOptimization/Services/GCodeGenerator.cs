@@ -13,23 +13,56 @@ namespace GlassCuttingOptimization.Services
 
         public GCodeResult GenerateGCode(OptimizationResult optimizationResult)
         {
+            return GenerateGCode(optimizationResult, "M0000031");
+        }
+
+        /// <summary>
+        /// 生成G代码（支持多文件和自定义项目名称）
+        /// </summary>
+        /// <param name="optimizationResult">排版结果</param>
+        /// <param name="projectName">项目名称</param>
+        /// <returns></returns>
+        public GCodeResult GenerateGCode(OptimizationResult optimizationResult, string projectName = "M0000031")
+        {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var result = new GCodeResult();
-            var lines = new List<string>();
+            var allLines = new List<string>();
 
             try
             {
-                _lineNumber = 1; // 重置行号
-
-                foreach (var sheet in optimizationResult.Sheets)
+                // 为每个板材生成独立的G代码文件
+                for (int i = 0; i < optimizationResult.Sheets.Count; i++)
                 {
-                    lines.AddRange(GenerateSheetGCode(sheet));
+                    var sheet = optimizationResult.Sheets[i];
+                    _lineNumber = 1; // 为每个文件重置行号
+
+                    var sheetLines = GenerateSheetGCode(sheet);
+                    var sheetGCode = string.Join(Environment.NewLine, sheetLines);
+
+                    // 生成文件名：项目名称_序号_原片使用数量_宽度_高度.g
+                    var fileName = $"{projectName}_{i + 1}_1_{sheet.Width}_{sheet.Height}.g";
+
+                    var fileInfo = new GCodeFileInfo
+                    {
+                        FileName = fileName,
+                        GCode = sheetGCode,
+                        Lines = sheetLines,
+                        SheetIndex = i,
+                        PieceCount = sheet.GlassPieces.Count,
+                        SheetWidth = sheet.Width,
+                        SheetHeight = sheet.Height,
+                        SheetUsageCount = 1
+                    };
+
+                    result.Files.Add(fileInfo);
+                    allLines.AddRange(sheetLines);
                 }
 
-                result.Lines = lines;
-                result.GCode = string.Join(Environment.NewLine, lines);
+                // 兼容性：保持原有的单文件格式
+                result.Lines = allLines;
+                result.GCode = string.Join(Environment.NewLine, allLines);
                 result.TotalPieces = optimizationResult.Sheets.Sum(s => s.GlassPieces.Count);
-                result.FileName = $"GlassCutting_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                result.FileName = $"{projectName}_{DateTime.Now:yyyyMMdd_HHmmss}.g";
             }
             catch (Exception ex)
             {
@@ -383,12 +416,55 @@ namespace GlassCuttingOptimization.Services
         }
 
         /// <summary>
+        /// 保存多个G代码文件到指定文件夹
+        /// </summary>
+        /// <param name="gCodeResult">G代码生成结果</param>
+        /// <param name="folderPath">目标文件夹路径</param>
+        /// <returns>已保存的文件路径列表</returns>
+        public List<string> SaveGCodeToFiles(GCodeResult gCodeResult, string folderPath)
+        {
+            var savedFiles = new List<string>();
+
+            try
+            {
+                // 确保文件夹存在
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                // 保存每个文件
+                foreach (var fileInfo in gCodeResult.Files)
+                {
+                    var filePath = Path.Combine(folderPath, fileInfo.FileName);
+                    File.WriteAllText(filePath, fileInfo.GCode, Encoding.UTF8);
+                    savedFiles.Add(filePath);
+                }
+
+                return savedFiles;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"保存G代码文件失败: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
         /// 生成切割路径优化的G代码（高级功能）
         /// </summary>
         public GCodeResult GenerateOptimizedCuttingPath(OptimizationResult optimizationResult)
         {
             // 使用完整的G代码生成，包含切割路径优化
             return GenerateGCode(optimizationResult);
+        }
+
+        /// <summary>
+        /// 生成切割路径优化的G代码（高级功能，支持自定义项目名称）
+        /// </summary>
+        public GCodeResult GenerateOptimizedCuttingPath(OptimizationResult optimizationResult, string projectName)
+        {
+            // 使用完整的G代码生成，包含切割路径优化
+            return GenerateGCode(optimizationResult, projectName);
         }
     }
 

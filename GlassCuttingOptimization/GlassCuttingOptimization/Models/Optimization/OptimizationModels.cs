@@ -144,6 +144,25 @@ namespace GlassCuttingOptimization.Models.Optimization
         public int TotalPieces { get; set; }
         public TimeSpan GenerationTime { get; set; }
         public string FileName { get; set; }
+        
+        // 多文件支持
+        public List<GCodeFileInfo> Files { get; set; } = new List<GCodeFileInfo>();
+        public bool IsMultiFile => Files.Count > 1;
+    }
+
+    /// <summary>
+    /// G代码文件信息
+    /// </summary>
+    public class GCodeFileInfo
+    {
+        public string FileName { get; set; }
+        public string GCode { get; set; }
+        public List<string> Lines { get; set; } = new List<string>();
+        public int SheetIndex { get; set; }
+        public int PieceCount { get; set; }
+        public int SheetWidth { get; set; }
+        public int SheetHeight { get; set; }
+        public int SheetUsageCount { get; set; } = 1; // 原片使用数量，通常为1
     }
     /// <summary>
     /// 优化后的板材

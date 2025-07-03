@@ -41,33 +41,116 @@ namespace GlassCuttingOptimization.Views.Controls
 
             try
             {
-                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult);
-
-                // 创建预览窗口
-                var previewForm = new Form
+                // 获取项目名称用于预览
+                string projectName = PromptForProjectName();
+                if (string.IsNullOrEmpty(projectName))
                 {
-                    Text = "G代码预览",
-                    Size = new Size(800, 600),
-                    StartPosition = FormStartPosition.CenterParent
-                };
+                    return;
+                }
 
-                var textBox = new TextBox
+                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult, projectName);
+
+                // 如果是多文件，显示文件选择器
+                if (gCodeResult.IsMultiFile)
                 {
-                    Multiline = true,
-                    ScrollBars = ScrollBars.Both,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Consolas", 10),
-                    ReadOnly = true,
-                    Text = gCodeResult.GCode
-                };
-
-                previewForm.Controls.Add(textBox);
-                previewForm.ShowDialog();
+                    ShowMultiFilePreview(gCodeResult);
+                }
+                else
+                {
+                    // 单文件预览（兼容性）
+                    ShowSingleFilePreview(gCodeResult.GCode);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"G代码预览失败:\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void ShowSingleFilePreview(string gCode)
+        {
+            // 创建预览窗口
+            var previewForm = new Form
+            {
+                Text = "G代码预览",
+                Size = new Size(800, 600),
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                ScrollBars = ScrollBars.Both,
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 10),
+                ReadOnly = true,
+                Text = gCode
+            };
+
+            previewForm.Controls.Add(textBox);
+            previewForm.ShowDialog();
+        }
+
+        private void ShowMultiFilePreview(GCodeResult gCodeResult)
+        {
+            // 创建多文件预览窗口
+            var previewForm = new Form
+            {
+                Text = "G代码预览 (多文件)",
+                Size = new Size(900, 700),
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            // 左侧文件列表
+            var splitContainer = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                SplitterDistance = 250
+            };
+
+            var fileListBox = new ListBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Microsoft YaHei UI", 9)
+            };
+
+            // 添加文件到列表
+            foreach (var fileInfo in gCodeResult.Files)
+            {
+                fileListBox.Items.Add($"{fileInfo.FileName} ({fileInfo.PieceCount}片)");
+            }
+
+            // 右侧内容显示
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                ScrollBars = ScrollBars.Both,
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 9),
+                ReadOnly = true
+            };
+
+            // 文件选择事件
+            fileListBox.SelectedIndexChanged += (s, e) =>
+            {
+                if (fileListBox.SelectedIndex >= 0)
+                {
+                    var selectedFile = gCodeResult.Files[fileListBox.SelectedIndex];
+                    textBox.Text = selectedFile.GCode;
+                }
+            };
+
+            // 默认选择第一个文件
+            if (fileListBox.Items.Count > 0)
+            {
+                fileListBox.SelectedIndex = 0;
+            }
+
+            splitContainer.Panel1.Controls.Add(fileListBox);
+            splitContainer.Panel2.Controls.Add(textBox);
+            previewForm.Controls.Add(splitContainer);
+
+            previewForm.ShowDialog();
         }
         // 添加G代码生成按钮事件
         private void btnGenerateGCode_Click(object sender, EventArgs e)
@@ -84,29 +167,61 @@ namespace GlassCuttingOptimization.Views.Controls
                 lblStatus.Text = "正在生成G代码...";
                 lblStatus.ForeColor = System.Drawing.Color.Blue;
 
-                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult);
-
-                // 显示保存对话框
-                using (var saveDialog = new SaveFileDialog())
+                // 弹出项目名称输入对话框
+                string projectName = PromptForProjectName();
+                if (string.IsNullOrEmpty(projectName))
                 {
-                    saveDialog.Filter = "G代码文件 (*.txt)|*.txt|所有文件 (*.*)|*.*";
-                    saveDialog.FileName = gCodeResult.FileName;
-                    saveDialog.Title = "保存G代码文件";
+                    lblStatus.Text = "G代码生成已取消";
+                    lblStatus.ForeColor = System.Drawing.Color.Orange;
+                    return;
+                }
 
-                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult, projectName);
+
+                // 如果是多文件，使用文件夹选择对话框
+                if (gCodeResult.IsMultiFile)
+                {
+                    using (var folderDialog = new FolderBrowserDialog())
                     {
-                        _gCodeGenerator.SaveGCodeToFile(gCodeResult, saveDialog.FileName);
+                        folderDialog.Description = "请选择G代码文件保存文件夹";
+                        folderDialog.ShowNewFolderButton = true;
 
-                        lblStatus.Text = $"G代码生成完成 - 文件: {Path.GetFileName(saveDialog.FileName)} - 玻璃片数: {gCodeResult.TotalPieces}";
-                        lblStatus.ForeColor = System.Drawing.Color.Green;
-
-                        // 询问是否打开文件
-                        var result = MessageBox.Show($"G代码文件已保存到:\n{saveDialog.FileName}\n\n是否要打开查看？",
-                            "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                        if (result == DialogResult.Yes)
+                        if (folderDialog.ShowDialog() == DialogResult.OK)
                         {
-                            System.Diagnostics.Process.Start("notepad.exe", saveDialog.FileName);
+                            var savedFiles = _gCodeGenerator.SaveGCodeToFiles(gCodeResult, folderDialog.SelectedPath);
+
+                            lblStatus.Text = $"G代码生成完成 - 共生成 {savedFiles.Count} 个文件 - 总玻璃片数: {gCodeResult.TotalPieces}";
+                            lblStatus.ForeColor = System.Drawing.Color.Green;
+
+                            // 显示生成的文件列表
+                            ShowGeneratedFilesList(savedFiles, gCodeResult);
+                        }
+                    }
+                }
+                else
+                {
+                    // 兼容原有的单文件模式
+                    using (var saveDialog = new SaveFileDialog())
+                    {
+                        saveDialog.Filter = "G代码文件 (*.g)|*.g|所有文件 (*.*)|*.*";
+                        saveDialog.FileName = gCodeResult.FileName;
+                        saveDialog.Title = "保存G代码文件";
+
+                        if (saveDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            _gCodeGenerator.SaveGCodeToFile(gCodeResult, saveDialog.FileName);
+
+                            lblStatus.Text = $"G代码生成完成 - 文件: {Path.GetFileName(saveDialog.FileName)} - 玻璃片数: {gCodeResult.TotalPieces}";
+                            lblStatus.ForeColor = System.Drawing.Color.Green;
+
+                            // 询问是否打开文件
+                            var result = MessageBox.Show($"G代码文件已保存到:\n{saveDialog.FileName}\n\n是否要打开查看？",
+                                "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                            if (result == DialogResult.Yes)
+                            {
+                                System.Diagnostics.Process.Start("notepad.exe", saveDialog.FileName);
+                            }
                         }
                     }
                 }
@@ -120,6 +235,133 @@ namespace GlassCuttingOptimization.Views.Controls
             finally
             {
                 btnGenerateGCode.Enabled = true;
+            }
+        }
+
+        private string PromptForProjectName()
+        {
+            string projectName = "M0000031"; // 默认值
+
+            // 创建输入对话框
+            using (var form = new Form())
+            {
+                form.Text = "项目名称设置";
+                form.Size = new Size(400, 150);
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.MaximizeBox = false;
+                form.MinimizeBox = false;
+
+                var label = new Label
+                {
+                    Text = "请输入项目名称:",
+                    Location = new Point(20, 20),
+                    Size = new Size(120, 23)
+                };
+
+                var textBox = new TextBox
+                {
+                    Text = projectName,
+                    Location = new Point(150, 20),
+                    Size = new Size(200, 23)
+                };
+
+                var btnOK = new Button
+                {
+                    Text = "确定",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(200, 60),
+                    Size = new Size(75, 23)
+                };
+
+                var btnCancel = new Button
+                {
+                    Text = "取消",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(285, 60),
+                    Size = new Size(75, 23)
+                };
+
+                form.Controls.AddRange(new Control[] { label, textBox, btnOK, btnCancel });
+                form.AcceptButton = btnOK;
+                form.CancelButton = btnCancel;
+
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    return textBox.Text.Trim();
+                }
+            }
+
+            return null;
+        }
+
+        private void ShowGeneratedFilesList(List<string> savedFiles, GCodeResult gCodeResult)
+        {
+            // 创建文件列表显示窗口
+            using (var form = new Form())
+            {
+                form.Text = "G代码文件生成完成";
+                form.Size = new Size(600, 400);
+                form.StartPosition = FormStartPosition.CenterParent;
+
+                var listBox = new ListBox
+                {
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Consolas", 9)
+                };
+
+                // 添加汇总信息
+                listBox.Items.Add($"项目: {Path.GetFileNameWithoutExtension(savedFiles.FirstOrDefault())?.Split('_')[0]}");
+                listBox.Items.Add($"生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                listBox.Items.Add($"总文件数: {savedFiles.Count}");
+                listBox.Items.Add($"总玻璃片数: {gCodeResult.TotalPieces}");
+                listBox.Items.Add($"生成耗时: {gCodeResult.GenerationTime.TotalMilliseconds:F0}ms");
+                listBox.Items.Add("");
+                listBox.Items.Add("生成的文件列表:");
+                listBox.Items.Add(new string('-', 50));
+
+                // 添加文件列表
+                for (int i = 0; i < savedFiles.Count; i++)
+                {
+                    var filePath = savedFiles[i];
+                    var fileInfo = gCodeResult.Files[i];
+                    listBox.Items.Add($"{Path.GetFileName(filePath)} (板材{fileInfo.SheetIndex + 1}, {fileInfo.PieceCount}个玻璃片, {fileInfo.SheetWidth}×{fileInfo.SheetHeight}mm)");
+                }
+
+                var panel = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 40
+                };
+
+                var btnOpenFolder = new Button
+                {
+                    Text = "打开文件夹",
+                    Location = new Point(10, 8),
+                    Size = new Size(100, 25)
+                };
+                btnOpenFolder.Click += (s, e) =>
+                {
+                    var folderPath = Path.GetDirectoryName(savedFiles.FirstOrDefault());
+                    if (!string.IsNullOrEmpty(folderPath))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", folderPath);
+                    }
+                };
+
+                var btnClose = new Button
+                {
+                    Text = "关闭",
+                    Location = new Point(120, 8),
+                    Size = new Size(75, 25),
+                    DialogResult = DialogResult.OK
+                };
+
+                panel.Controls.AddRange(new Control[] { btnOpenFolder, btnClose });
+                form.Controls.AddRange(new Control[] { listBox, panel });
+                form.AcceptButton = btnClose;
+
+                form.ShowDialog();
             }
         }
         public void SetVisualizationControl(OptimizationVisualizationControl visualizationControl)

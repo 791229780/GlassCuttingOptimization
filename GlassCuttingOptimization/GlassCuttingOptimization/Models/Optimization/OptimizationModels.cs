@@ -8,6 +8,15 @@ using System.Threading.Tasks;
 
 namespace GlassCuttingOptimization.Models.Optimization
 {
+
+    public class GCodeFileResult
+    {
+        public string FileName { get; set; }
+        public string GCode { get; set; }
+        public int SheetIndex { get; set; }
+        public int PieceCount { get; set; }
+        public string SheetSize { get; set; }
+    }
     /// <summary>
     /// 排版后的玻璃片
     /// </summary>

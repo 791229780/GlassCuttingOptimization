@@ -9,6 +9,47 @@ namespace GlassCuttingOptimization.Services
 {
     public class GCodeGenerator
     {
+
+
+
+        public List<GCodeFileResult> GenerateGCodeFiles(OptimizationResult optimizationResult, string baseName = "M0000031")
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var results = new List<GCodeFileResult>();
+
+            try
+            {
+                for (int i = 0; i < optimizationResult.Sheets.Count; i++)
+                {
+                    var sheet = optimizationResult.Sheets[i];
+                    var sheetGCode = GenerateSheetGCode(sheet);
+
+                    // 生成文件名：名称+序号+原片使用数量+原片的大小+文件格式
+                    var fileName = $"{baseName}_{(i + 1)}_{sheet.GlassPieces.Count}_{sheet.Width}_{sheet.Height}.g";
+
+                    var result = new GCodeFileResult
+                    {
+                        FileName = fileName,
+                        GCode = string.Join(Environment.NewLine, sheetGCode),
+                        SheetIndex = i + 1,
+                        PieceCount = sheet.GlassPieces.Count,
+                        SheetSize = $"{sheet.Width}x{sheet.Height}"
+                    };
+
+                    results.Add(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"G代码生成失败: {ex.Message}", ex);
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+
+            return results;
+        }
         public GCodeResult GenerateGCode(OptimizationResult optimizationResult)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -39,7 +80,27 @@ namespace GlassCuttingOptimization.Services
 
             return result;
         }
+        public void SaveGCodeFiles(List<GCodeFileResult> gCodeResults, string folderPath)
+        {
+            try
+            {
+                // 确保文件夹存在
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
 
+                foreach (var result in gCodeResults)
+                {
+                    var filePath = Path.Combine(folderPath, result.FileName);
+                    File.WriteAllText(filePath, result.GCode, Encoding.UTF8);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"保存G代码文件失败: {ex.Message}", ex);
+            }
+        }
         private List<string> GenerateSheetGCode(OptimizedSheet sheet)
         {
             var lines = new List<string>();

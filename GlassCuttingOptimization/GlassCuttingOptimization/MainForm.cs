@@ -2,9 +2,10 @@
 using GlassCuttingOptimization.Enums;
 using GlassCuttingOptimization.Utils;
 using GlassCuttingOptimization.Views;
-using GlassCuttingOptimization.Views.CustomerView;
+using GlassCuttingOptimization.Views.Controls;
 using GlassCuttingOptimization.Views.OrderView;
 using GlassCuttingOptimization.Views.OriginalView;
+using GlassCuttingOptimization.Views.SettingView;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -31,6 +32,8 @@ namespace GlassCuttingOptimization
             
             //绑定事件
             BindEventHandler();
+
+         
         }
 
 
@@ -43,6 +46,16 @@ namespace GlassCuttingOptimization
             this.Text = "玻璃排版优化软件";
 
             btnOrder.Click += BtnOrder_Click;
+
+            var welcomeControl = new WelcomeControl();
+            welcomeControl.Dock = DockStyle.Fill;
+            this.panel7.Controls.Clear();
+            this.panel7.Controls.Add(welcomeControl);
+        
+
+
+       
+
         }
 
         private void BtnOrder_Click(object sender, EventArgs e)
@@ -63,14 +76,16 @@ namespace GlassCuttingOptimization
                         form.ShowDialog();
                     }
                     break;
-                case NavigationMenu.Customer: {
-                      var form = new CustomerForm();
-                        form.ShowDialog();
-                    }
-                    break;
+
                 case NavigationMenu.ExitSystem: {
                         this.Close();
                     } break;
+                case NavigationMenu.Settings: {
+                        var form = new SettingForm();
+
+                        form.ShowDialog();
+                    }
+                    break;
                 default:
                     break;
             }

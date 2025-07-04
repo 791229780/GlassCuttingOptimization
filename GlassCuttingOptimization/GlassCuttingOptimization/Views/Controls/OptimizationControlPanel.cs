@@ -11,6 +11,7 @@ using GlassCuttingOptimization.Models.Dto;
 using GlassCuttingOptimization.Models.Optimization;
 using GlassCuttingOptimization.Services;
 using System.IO;
+using GlassCuttingOptimization.Common;
 
 namespace GlassCuttingOptimization.Views.Controls
 {
@@ -72,55 +73,6 @@ namespace GlassCuttingOptimization.Views.Controls
         // 添加G代码生成按钮事件
         private void btnGenerateGCode_Click(object sender, EventArgs e)
         {
-            //if (_currentResult == null)
-            //{
-            //    MessageBox.Show("请先进行排版优化", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            //    return;
-            //}
-
-            //try
-            //{
-            //    btnGenerateGCode.Enabled = false;
-            //    lblStatus.Text = "正在生成G代码...";
-            //    lblStatus.ForeColor = System.Drawing.Color.Blue;
-
-            //    var gCodeResult = _gCodeGenerator.GenerateGCode(_currentResult);
-
-            //    // 显示保存对话框
-            //    using (var saveDialog = new SaveFileDialog())
-            //    {
-            //        saveDialog.Filter = "G代码文件 (*.txt)|*.txt|所有文件 (*.*)|*.*";
-            //        saveDialog.FileName = gCodeResult.FileName;
-            //        saveDialog.Title = "保存G代码文件";
-
-            //        if (saveDialog.ShowDialog() == DialogResult.OK)
-            //        {
-            //            _gCodeGenerator.SaveGCodeToFile(gCodeResult, saveDialog.FileName);
-
-            //            lblStatus.Text = $"G代码生成完成 - 文件: {Path.GetFileName(saveDialog.FileName)} - 玻璃片数: {gCodeResult.TotalPieces}";
-            //            lblStatus.ForeColor = System.Drawing.Color.Green;
-
-            //            // 询问是否打开文件
-            //            var result = MessageBox.Show($"G代码文件已保存到:\n{saveDialog.FileName}\n\n是否要打开查看？",
-            //                "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            //            if (result == DialogResult.Yes)
-            //            {
-            //                System.Diagnostics.Process.Start("notepad.exe", saveDialog.FileName);
-            //            }
-            //        }
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    lblStatus.Text = $"G代码生成失败: {ex.Message}";
-            //    lblStatus.ForeColor = System.Drawing.Color.Red;
-            //    MessageBox.Show($"G代码生成失败:\n{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //}
-            //finally
-            //{
-            //    btnGenerateGCode.Enabled = true;
-            //}
 
             if (_currentResult == null)
             {
@@ -134,32 +86,59 @@ namespace GlassCuttingOptimization.Views.Controls
                 lblStatus.Text = "正在生成G代码...";
                 lblStatus.ForeColor = System.Drawing.Color.Blue;
 
-                // 生成多个G文件
-                var gCodeResults = _gCodeGenerator.GenerateGCodeFiles(_currentResult, "M0000031");
+                // 从配置文件读取保存路径
+                var configPath = Path.Combine(Application.StartupPath, "config.ini");
+                var iniFileHelper = new IniFileHelper(configPath);
+                var savePath = iniFileHelper.Read("Settings", "SaveFile", "");
 
-                // 显示文件夹选择对话框
-                using (var folderDialog = new FolderBrowserDialog())
+                // 如果没有配置路径，提示用户选择
+                if (string.IsNullOrEmpty(savePath) || !Directory.Exists(savePath))
                 {
-                    folderDialog.Description = "选择保存G代码文件的文件夹";
-                    folderDialog.ShowNewFolderButton = true;
-
-                    if (folderDialog.ShowDialog() == DialogResult.OK)
+                    using (var folderDialog = new FolderBrowserDialog())
                     {
-                        _gCodeGenerator.SaveGCodeFiles(gCodeResults, folderDialog.SelectedPath);
+                        folderDialog.Description = "选择保存G代码文件的根目录";
+                        folderDialog.ShowNewFolderButton = true;
 
-                        lblStatus.Text = $"G代码生成完成 - 共生成 {gCodeResults.Count} 个文件";
-                        lblStatus.ForeColor = System.Drawing.Color.Green;
-
-                        // 显示生成的文件列表
-                        var fileList = string.Join("\n", gCodeResults.Select(r => r.FileName));
-                        var result = MessageBox.Show($"G代码文件已保存到:\n{folderDialog.SelectedPath}\n\n生成的文件:\n{fileList}\n\n是否要打开文件夹？",
-                            "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                        if (result == DialogResult.Yes)
+                        if (folderDialog.ShowDialog() == DialogResult.OK)
                         {
-                            System.Diagnostics.Process.Start("explorer.exe", folderDialog.SelectedPath);
+                            savePath = folderDialog.SelectedPath;
+                            // 保存路径到配置文件
+                            iniFileHelper.Write("Settings", "SaveFile", savePath);
+                        }
+                        else
+                        {
+                            return; // 用户取消了选择
                         }
                     }
+                }
+
+                // 生成时间戳作为基础名称和文件夹名称
+                var baseName = DateTime.Now.ToString("yyyyMMddHHmmss");
+
+                // 创建以时间戳命名的子文件夹
+                var timestampFolder = Path.Combine(savePath, baseName);
+                if (!Directory.Exists(timestampFolder))
+                {
+                    Directory.CreateDirectory(timestampFolder);
+                }
+
+                // 生成多个G文件
+                var gCodeResults = _gCodeGenerator.GenerateGCodeFiles(_currentResult, baseName);
+
+                // 保存文件到时间戳文件夹中
+                _gCodeGenerator.SaveGCodeFiles(gCodeResults, timestampFolder);
+
+                lblStatus.Text = $"G代码生成完成 - 共生成 {gCodeResults.Count} 个文件";
+                lblStatus.ForeColor = System.Drawing.Color.Green;
+
+                // 显示生成的文件列表
+                var fileList = string.Join("\n", gCodeResults.Select(r => r.FileName));
+                var result = MessageBox.Show($"G代码文件已保存到:\n{timestampFolder}\n\n生成的文件:\n{fileList}\n\n是否要打开文件夹？",
+                    "生成完成", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", timestampFolder);
                 }
             }
             catch (Exception ex)
@@ -172,6 +151,7 @@ namespace GlassCuttingOptimization.Views.Controls
             {
                 btnGenerateGCode.Enabled = true;
             }
+
         }
         public void SetVisualizationControl(OptimizationVisualizationControl visualizationControl)
         {

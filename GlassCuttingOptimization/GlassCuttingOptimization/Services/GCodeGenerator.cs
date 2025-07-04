@@ -19,6 +19,12 @@ namespace GlassCuttingOptimization.Services
 
             try
             {
+                // 如果没有提供baseName，使用时间戳
+                if (string.IsNullOrEmpty(baseName))
+                {
+                    baseName = DateTime.Now.ToString("yyyyMMddHHmmss");
+                }
+
                 for (int i = 0; i < optimizationResult.Sheets.Count; i++)
                 {
                     var sheet = optimizationResult.Sheets[i];

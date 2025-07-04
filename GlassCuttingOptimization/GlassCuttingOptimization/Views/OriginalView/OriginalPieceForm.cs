@@ -1,21 +1,12 @@
 ﻿using AntdUI;
 using GlassCuttingOptimization.Enums;
-using GlassCuttingOptimization.Models;
 using GlassCuttingOptimization.Models.Dto;
 using GlassCuttingOptimization.Models.UIModels;
 using GlassCuttingOptimization.Utils;
-using GlassCuttingOptimization.Views.CustomerView;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Media.Media3D;
 
 namespace GlassCuttingOptimization.Views.OriginalView
 {

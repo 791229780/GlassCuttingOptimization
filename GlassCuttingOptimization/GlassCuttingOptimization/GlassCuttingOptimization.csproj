@@ -216,6 +216,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\IniFileHelper.cs" />
     <Compile Include="Enums\NavigationMenu.cs" />
     <Compile Include="Enums\PowerType.cs" />
     <Compile Include="MainForm.cs">
@@ -227,7 +228,6 @@
     <Compile Include="Models\Code\ComboboxItem.cs" />
     <Compile Include="Models\Code\RegionComboBoxGroup.cs" />
     <Compile Include="Models\Code\RegionModel.cs" />
-    <Compile Include="Models\Dto\CustomerInfoDto.cs" />
     <Compile Include="Models\Dto\MaterialDto.cs" />
     <Compile Include="Models\Dto\OrderDto.cs" />
     <Compile Include="Models\Dto\OriginalDto.cs" />
@@ -235,7 +235,6 @@
     <Compile Include="Models\Model\NoteModel.cs" />
     <Compile Include="Models\Optimization\OptimizationModels.cs" />
     <Compile Include="Models\UIItem\ComboboxItem.cs" />
-    <Compile Include="Models\UIModels\UICustomerInfoDto.cs" />
     <Compile Include="Models\UIModels\UIMaterial.cs" />
     <Compile Include="Models\UIModels\UIOrderDto.cs" />
     <Compile Include="Models\UIModels\UIOriginal.cs" />
@@ -268,17 +267,11 @@
     <Compile Include="Views\Controls\OptimizationVisualizationControl.Designer.cs">
       <DependentUpon>OptimizationVisualizationControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Views\CustomerView\CustomerEditControl.cs">
+    <Compile Include="Views\Controls\WelcomeControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Views\CustomerView\CustomerEditControl.Designer.cs">
-      <DependentUpon>CustomerEditControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Views\CustomerView\CustomerForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Views\CustomerView\CustomerForm.Designer.cs">
-      <DependentUpon>CustomerForm.cs</DependentUpon>
+    <Compile Include="Views\Controls\WelcomeControl.Designer.cs">
+      <DependentUpon>WelcomeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\DataGripViewControl1.cs">
       <SubType>UserControl</SubType>
@@ -288,16 +281,6 @@
     </Compile>
     <Compile Include="Views\GlassView\GlassPanel.cs">
       <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Views\InsertCutOrder.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Views\InsertCutOrder.Designer.cs">
-      <DependentUpon>InsertCutOrder.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Views\OptimizeControl.cs" />
-    <Compile Include="Views\OptimizeControl.Designer.cs">
-      <DependentUpon>OptimizeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\OrderView\NoteForm.cs">
       <SubType>Form</SubType>
@@ -317,6 +300,12 @@
     <Compile Include="Views\OriginalView\OriginalPieceForm.Designer.cs">
       <DependentUpon>OriginalPieceForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Views\SettingView\SettingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SettingView\SettingForm.Designer.cs">
+      <DependentUpon>SettingForm.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -333,20 +322,11 @@
     <EmbeddedResource Include="Views\Controls\OptimizationControlPanel.resx">
       <DependentUpon>OptimizationControlPanel.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Views\CustomerView\CustomerEditControl.resx">
-      <DependentUpon>CustomerEditControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Views\CustomerView\CustomerForm.resx">
-      <DependentUpon>CustomerForm.cs</DependentUpon>
+    <EmbeddedResource Include="Views\Controls\WelcomeControl.resx">
+      <DependentUpon>WelcomeControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\DataGripViewControl1.resx">
       <DependentUpon>DataGripViewControl1.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Views\InsertCutOrder.resx">
-      <DependentUpon>InsertCutOrder.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Views\OptimizeControl.resx">
-      <DependentUpon>OptimizeControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\OrderView\NoteForm.resx">
       <DependentUpon>NoteForm.cs</DependentUpon>
@@ -356,6 +336,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Views\OriginalView\OriginalPieceForm.resx">
       <DependentUpon>OriginalPieceForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SettingView\SettingForm.resx">
+      <DependentUpon>SettingForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

@@ -39,6 +39,7 @@
             this.lblAlgorithmUsed = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.btnGenerateGCode = new System.Windows.Forms.Button();
             this.lblSheetSelector = new System.Windows.Forms.Label();
             this.cmbSheetSelector = new System.Windows.Forms.ComboBox();
             this.btnRotate = new System.Windows.Forms.Button();
@@ -49,8 +50,6 @@
             this.btnZoomOut = new System.Windows.Forms.Button();
             this.btnZoomIn = new System.Windows.Forms.Button();
             this.trackBarZoom = new System.Windows.Forms.TrackBar();
-            this.btnGenerateGCode = new System.Windows.Forms.Button();
-            this.btnPreviewGCode = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -147,7 +146,6 @@
             // 
             // panel3
             // 
-            this.panel3.Controls.Add(this.btnPreviewGCode);
             this.panel3.Controls.Add(this.btnGenerateGCode);
             this.panel3.Controls.Add(this.lblSheetSelector);
             this.panel3.Controls.Add(this.cmbSheetSelector);
@@ -158,6 +156,16 @@
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(300, 100);
             this.panel3.TabIndex = 2;
+            // 
+            // btnGenerateGCode
+            // 
+            this.btnGenerateGCode.Location = new System.Drawing.Point(80, 70);
+            this.btnGenerateGCode.Name = "btnGenerateGCode";
+            this.btnGenerateGCode.Size = new System.Drawing.Size(75, 23);
+            this.btnGenerateGCode.TabIndex = 4;
+            this.btnGenerateGCode.Text = "G代码生成";
+            this.btnGenerateGCode.UseVisualStyleBackColor = true;
+            this.btnGenerateGCode.Click += new System.EventHandler(this.btnGenerateGCode_Click);
             // 
             // lblSheetSelector
             // 
@@ -262,25 +270,6 @@
             this.trackBarZoom.Value = 100;
             this.trackBarZoom.ValueChanged += new System.EventHandler(this.trackBarZoom_ValueChanged);
             // 
-            // btnGenerateGCode
-            // 
-            this.btnGenerateGCode.Location = new System.Drawing.Point(80, 70);
-            this.btnGenerateGCode.Name = "btnGenerateGCode";
-            this.btnGenerateGCode.Size = new System.Drawing.Size(75, 23);
-            this.btnGenerateGCode.TabIndex = 4;
-            this.btnGenerateGCode.Text = "G代码生成";
-            this.btnGenerateGCode.UseVisualStyleBackColor = true;
-            this.btnGenerateGCode.Click += new System.EventHandler(this.btnGenerateGCode_Click);
-            // 
-            // btnPreviewGCode
-            // 
-            this.btnPreviewGCode.Location = new System.Drawing.Point(170, 69);
-            this.btnPreviewGCode.Name = "btnPreviewGCode";
-            this.btnPreviewGCode.Size = new System.Drawing.Size(75, 23);
-            this.btnPreviewGCode.TabIndex = 5;
-            this.btnPreviewGCode.Text = "预览G代码";
-            this.btnPreviewGCode.UseVisualStyleBackColor = true;
-            // 
             // OptimizationControlPanel
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -327,6 +316,5 @@
         private System.Windows.Forms.Button btnZoomIn;
         private System.Windows.Forms.TrackBar trackBarZoom;
         private System.Windows.Forms.Button btnGenerateGCode;
-        private System.Windows.Forms.Button btnPreviewGCode;
     }
 }
